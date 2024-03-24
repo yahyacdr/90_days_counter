@@ -3,6 +3,7 @@ import "./App.css";
 import editIcon from "./edit-text.png";
 
 function App() {
+  const [showEditPanle, setShowEditPanel] = useState(false);
   function reducer(state, action) {
     if (action.type === "calcDate") {
       let date = new Date(
@@ -18,13 +19,17 @@ function App() {
         new Date(action.initialDate).getHours() > 11
           ? new Date(action.initialDate).getHours() - 12
           : new Date(action.initialDate).getHours()
-      }:${new Date(action.initialDate).getMinutes()}`;
+      }:${
+        new Date(action.initialDate).getMinutes() < 10
+          ? "0" + new Date(action.initialDate).getMinutes()
+          : new Date(action.initialDate).getMinutes()
+      } ${new Date(action.initialDate).getHours() > 11 ? "PM" : "AM"}`;
+      time = time[0] > 1 ? "0" + time : time;
       return {
         initialDate: action.initialDate,
         finalDate: finalDate,
         time: time,
       };
-    } else if (action.type === "calcRemainingDays") {
     }
   }
 
@@ -33,21 +38,25 @@ function App() {
     .padStart(2, "0")}/${new Date()
     .getDate()
     .toString()
-    .padStart(2, "0")}/${new Date().getFullYear()}`;
-  let currentTime = `${
-    new Date(currentDate).getHours() > 11
-      ? new Date(currentDate).getHours() - 12
-      : new Date(currentDate).getHours()
-  }:${new Date(currentDate).getMinutes()}`;
+    .padStart(
+      2,
+      "0"
+    )}/${new Date().getFullYear()} ${new Date().getHours()}:${new Date().getMinutes()}`;
 
   const [{ initialDate, finalDate, time }, dispatch] = useReducer(
     reducer,
     JSON.parse(localStorage.getItem("date-range")) || {
       initialDate: currentDate,
       finalDate: "",
-      time: currentTime,
+      time: "",
     }
   );
+
+  useEffect(() => {
+    if (!JSON.parse(localStorage.getItem("date-range")))
+      dispatch({ type: "calcDate", initialDate: new Date() });
+  }, []);
+
   useEffect(
     function () {
       window.localStorage.setItem(
@@ -61,18 +70,21 @@ function App() {
     },
     [initialDate, finalDate, time]
   );
+
   return (
     <div className="app">
       <Header>
-        <TargetDate
-          dispatcher={dispatch}
-          date={initialDate}
-          finalDate={finalDate}
-          time={time}
-        />
+        <TargetDate date={initialDate} finalDate={finalDate} time={time} />
       </Header>
       <Main finalDate={finalDate} initialDate={initialDate}></Main>
-      <Footer></Footer>
+      {showEditPanle && (
+        <EditPanel
+          setShowEditPanel={setShowEditPanel}
+          dispatcher={dispatch}
+          date={initialDate}
+        ></EditPanel>
+      )}
+      <Footer setShowEditPanel={setShowEditPanel}></Footer>
     </div>
   );
 }
@@ -86,27 +98,23 @@ function Header({ children }) {
   );
 }
 
-function TargetDate({ date, finalDate, dispatcher, time }) {
-  const iniDateInput = useRef();
-  const targetTime = useRef(
-    `${finalDate} ${+time[0] > 1 ? "0" + time : time} ${
-      new Date(date).getHours() > 11 ? "PM" : "AM"
-    }`
-  );
+function TargetDate({ date, finalDate, time }) {
+  let initialDate = `${(new Date(date).getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}/${new Date(date)
+    .getDate()
+    .toString()
+    .padStart(2, "0")}/${new Date(date).getFullYear()}`;
 
-  function calcDate(e) {
-    dispatcher({ type: "calcDate", initialDate: e.target.value });
-  }
   return (
     <div className="date-container">
-      <input
-        type="datetime-local"
-        onChange={calcDate}
-        value={date}
-        ref={iniDateInput}
-      />
+      <p>
+        {initialDate} {time}
+      </p>
       <div className="line"></div>
-      <p>{targetTime.current}</p>
+      <p>
+        {finalDate} {time}
+      </p>
     </div>
   );
 }
@@ -120,10 +128,19 @@ function Main({ finalDate, initialDate }) {
     date.setSeconds(dateInitial.getSeconds());
     const dateNow = new Date();
     const timeDiff = (date - dateNow) / 1000;
-    const hoursRemaining = Math.floor(timeDiff / (60 * 60));
-    const minutesRemaining =
-      59 - -Math.floor(date.getMinutes() - dateNow.getMinutes()).toFixed(0);
-    const secondsRemaining = 59 - -(date.getSeconds() - dateNow.getSeconds());
+    const hoursDiff = Math.floor(timeDiff / (60 * 60));
+    const hoursRemaining = Math.abs(
+      hoursDiff < 0 ? 24 - Math.abs(hoursDiff) : hoursDiff
+    );
+    const minutesRemaining = Math.abs(
+      Math.floor(
+        date.getMinutes() - dateNow.getMinutes() < 0
+          ? 59 - Math.abs(date.getMinutes() - dateNow.getMinutes())
+          : date.getMinutes() - dateNow.getMinutes()
+      )
+    ).toFixed(0);
+    const secondsRemaining =
+      59 - Math.abs(date.getSeconds() - dateNow.getSeconds());
     const daysRemaining = Math.ceil(
       (new Date(finalDate) - new Date()) / (1000 * 60 * 60 * 24)
     );
@@ -135,6 +152,7 @@ function Main({ finalDate, initialDate }) {
       secondsRemaining: secondsRemaining,
     };
   }
+
   const [
     { daysRemaining, hoursRemaining, minutesRemaining, secondsRemaining },
     dispatch,
@@ -144,6 +162,7 @@ function Main({ finalDate, initialDate }) {
     minutesRemaining: 0,
     secondsRemaining: 0,
   });
+
   useEffect(() => {
     dispatch({ finalDate: finalDate, initialDate: initialDate });
     const interval = setInterval(() => {
@@ -151,6 +170,7 @@ function Main({ finalDate, initialDate }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [finalDate, initialDate]);
+
   return (
     <main>
       <div className="days-remaining">
@@ -159,8 +179,13 @@ function Main({ finalDate, initialDate }) {
           <p>Days</p>
           <div className="proggress-bar">
             <div className="bar">
-              <div className="proggress"></div>
-              <div className="perc">60%</div>
+              <div
+                className="proggress"
+                style={{ width: 100 - (daysRemaining * 100) / 90 + "%" }}
+              ></div>
+              <div className="perc">
+                {Math.floor(100 - (daysRemaining * 100) / 90)}%
+              </div>
             </div>
           </div>
         </div>
@@ -169,8 +194,13 @@ function Main({ finalDate, initialDate }) {
           <p>Hours</p>
           <div className="proggress-bar">
             <div className="bar">
-              <div className="proggress"></div>
-              <div className="perc">60%</div>
+              <div
+                className="proggress"
+                style={{ width: 100 - (hoursRemaining * 100) / 24 + "%" }}
+              ></div>
+              <div className="perc">
+                {Math.floor(100 - (hoursRemaining * 100) / 24)}%
+              </div>
             </div>
           </div>
         </div>
@@ -181,8 +211,13 @@ function Main({ finalDate, initialDate }) {
           <p>Minutes</p>
           <div className="proggress-bar">
             <div className="bar">
-              <div className="proggress"></div>
-              <div className="perc">60%</div>
+              <div
+                className="proggress"
+                style={{ width: 100 - (minutesRemaining * 100) / 60 + "%" }}
+              ></div>
+              <div className="perc">
+                {Math.floor(100 - (minutesRemaining * 100) / 60)}%
+              </div>
             </div>
           </div>
         </div>
@@ -193,8 +228,13 @@ function Main({ finalDate, initialDate }) {
           <p>Seconds</p>
           <div className="proggress-bar">
             <div className="bar">
-              <div className="proggress"></div>
-              <div className="perc">60%</div>
+              <div
+                className="proggress"
+                style={{ width: 100 - (secondsRemaining * 100) / 60 + "%" }}
+              ></div>
+              <div className="perc">
+                {Math.floor(100 - (secondsRemaining * 100) / 60)}%
+              </div>
             </div>
           </div>
         </div>
@@ -203,15 +243,47 @@ function Main({ finalDate, initialDate }) {
   );
 }
 
-function Footer() {
+function Footer({ setShowEditPanel }) {
   return (
     <footer>
       <div className="edit-btn">
-        <button>
+        <button onClick={() => setShowEditPanel((state) => !state)}>
           <img src={editIcon} alt="" />
         </button>
       </div>
     </footer>
+  );
+}
+
+function EditPanel({ setShowEditPanel, date, finalDate, dispatcher, time }) {
+  const iniDateInput = useRef();
+
+  function calcDate(e) {
+    dispatcher({ type: "calcDate", initialDate: e.target.value });
+  }
+
+  function formatDateForInput(dateString) {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = ("0" + (date.getMonth() + 1)).slice(-2);
+    const day = ("0" + date.getDate()).slice(-2);
+    const hours = ("0" + date.getHours()).slice(-2);
+    const minutes = ("0" + date.getMinutes()).slice(-2);
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+  return (
+    <div className="panel">
+      <div className="x-cntnr" onClick={() => setShowEditPanel(false)}>
+        <div className="x-cross-1 x-cross"></div>
+        <div className="x-cross-2 x-cross"></div>
+      </div>
+      <input
+        type="datetime-local"
+        onChange={calcDate}
+        value={formatDateForInput(date)}
+        ref={iniDateInput}
+      />
+    </div>
   );
 }
 
