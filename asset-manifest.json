@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/90_days_counter/static/css/main.6faac4e1.css",
+    "main.js": "/90_days_counter/static/js/main.892ebf12.js",
+    "index.html": "/90_days_counter/index.html",
+    "main.6faac4e1.css.map": "/90_days_counter/static/css/main.6faac4e1.css.map",
+    "main.892ebf12.js.map": "/90_days_counter/static/js/main.892ebf12.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6faac4e1.css",
+    "static/js/main.892ebf12.js"
+  ]
+}
