@@ -122,28 +122,19 @@ function TargetDate({ date, finalDate, time }) {
 function Main({ finalDate, initialDate }) {
   function reducer(state, action) {
     const dateInitial = new Date(action.initialDate);
-    const date = new Date();
-    date.setHours(dateInitial.getHours());
-    date.setMinutes(dateInitial.getMinutes());
-    date.setSeconds(dateInitial.getSeconds());
-    const dateNow = new Date();
-    const timeDiff = (date - dateNow) / 1000;
-    const hoursDiff = Math.floor(timeDiff / (60 * 60));
-    const hoursRemaining = Math.abs(
-      hoursDiff < 0 ? 24 - Math.abs(hoursDiff) : hoursDiff
+    const ninetyDaysLater = new Date(
+      dateInitial.getTime() + 90 * 24 * 60 * 60 * 1000
     );
-    const minutesRemaining = Math.abs(
-      Math.floor(
-        date.getMinutes() - dateNow.getMinutes() < 0
-          ? 59 - Math.abs(date.getMinutes() - dateNow.getMinutes())
-          : date.getMinutes() - dateNow.getMinutes()
-      )
-    ).toFixed(0);
-    const secondsRemaining =
-      59 - Math.abs(date.getSeconds() - dateNow.getSeconds());
-    const daysRemaining = Math.ceil(
-      (new Date(finalDate) - new Date()) / (1000 * 60 * 60 * 24)
+    const currentDate = new Date();
+    const differenceMs = ninetyDaysLater - currentDate;
+    let daysRemaining = Math.floor(differenceMs / (1000 * 60 * 60 * 24));
+    let hoursRemaining = Math.floor(
+      (differenceMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
     );
+    let minutesRemaining = Math.floor(
+      (differenceMs % (1000 * 60 * 60)) / (1000 * 60)
+    );
+    let secondsRemaining = Math.floor((differenceMs % (1000 * 60)) / 1000);
 
     return {
       daysRemaining: daysRemaining,
