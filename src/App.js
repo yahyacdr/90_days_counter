@@ -76,7 +76,7 @@ function App() {
       <Header>
         <TargetDate date={initialDate} finalDate={finalDate} time={time} />
       </Header>
-      <Main finalDate={finalDate} initialDate={initialDate}></Main>
+      <Main finalDate={finalDate} initialDate={initialDate} time={time}></Main>
       {showEditPanle && (
         <EditPanel
           setShowEditPanel={setShowEditPanel}
@@ -119,7 +119,7 @@ function TargetDate({ date, finalDate, time }) {
   );
 }
 
-function Main({ finalDate, initialDate }) {
+function Main({ finalDate, initialDate, time }) {
   function reducer(state, action) {
     const dateInitial = new Date(action.initialDate);
     const ninetyDaysLater = new Date(
@@ -127,14 +127,11 @@ function Main({ finalDate, initialDate }) {
     );
     const currentDate = new Date();
     const differenceMs = ninetyDaysLater - currentDate;
-    let daysRemaining = Math.floor(differenceMs / (1000 * 60 * 60 * 24));
-    let hoursRemaining = Math.floor(
-      (differenceMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    );
-    let minutesRemaining = Math.floor(
-      (differenceMs % (1000 * 60 * 60)) / (1000 * 60)
-    );
-    let secondsRemaining = Math.floor((differenceMs % (1000 * 60)) / 1000);
+    let daysRemaining = differenceMs / (1000 * 60 * 60 * 24);
+    let hoursRemaining =
+      (differenceMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
+    let minutesRemaining = (differenceMs % (1000 * 60 * 60)) / (1000 * 60);
+    let secondsRemaining = (differenceMs % (1000 * 60)) / 1000;
 
     return {
       daysRemaining: daysRemaining,
@@ -166,7 +163,11 @@ function Main({ finalDate, initialDate }) {
     <main>
       <div className="days-remaining">
         <div className="days counter">
-          <p>{+daysRemaining < 10 ? "0" + daysRemaining : daysRemaining}</p>
+          <p>
+            {+daysRemaining < 10
+              ? "0" + Math.floor(daysRemaining)
+              : Math.floor(daysRemaining)}
+          </p>
           <p>Days</p>
           <div className="proggress-bar">
             <div className="bar">
@@ -181,7 +182,11 @@ function Main({ finalDate, initialDate }) {
           </div>
         </div>
         <div className="hours counter">
-          <p>{+hoursRemaining < 10 ? "0" + hoursRemaining : hoursRemaining}</p>
+          <p>
+            {+hoursRemaining < 10
+              ? "0" + Math.floor(hoursRemaining)
+              : Math.floor(hoursRemaining)}
+          </p>
           <p>Hours</p>
           <div className="proggress-bar">
             <div className="bar">
@@ -197,7 +202,9 @@ function Main({ finalDate, initialDate }) {
         </div>
         <div className="minutes counter">
           <p>
-            {+minutesRemaining < 10 ? "0" + minutesRemaining : minutesRemaining}
+            {+minutesRemaining < 10
+              ? "0" + Math.floor(minutesRemaining)
+              : Math.floor(minutesRemaining)}
           </p>
           <p>Minutes</p>
           <div className="proggress-bar">
@@ -207,14 +214,16 @@ function Main({ finalDate, initialDate }) {
                 style={{ width: 100 - (minutesRemaining * 100) / 60 + "%" }}
               ></div>
               <div className="perc">
-                {Math.floor(100 - (minutesRemaining * 100) / 60)}%
+                {Math.ceil(100 - (minutesRemaining * 100) / 60)}%
               </div>
             </div>
           </div>
         </div>
         <div className="seconds counter">
           <p>
-            {+secondsRemaining < 10 ? "0" + secondsRemaining : secondsRemaining}
+            {+secondsRemaining < 10
+              ? "0" + Math.floor(secondsRemaining)
+              : Math.floor(secondsRemaining)}
           </p>
           <p>Seconds</p>
           <div className="proggress-bar">
@@ -224,7 +233,7 @@ function Main({ finalDate, initialDate }) {
                 style={{ width: 100 - (secondsRemaining * 100) / 60 + "%" }}
               ></div>
               <div className="perc">
-                {Math.floor(100 - (secondsRemaining * 100) / 60)}%
+                {Math.ceil(100 - (secondsRemaining * 100) / 60)}%
               </div>
             </div>
           </div>
