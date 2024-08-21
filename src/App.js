@@ -5,31 +5,56 @@ import editIcon from "./edit-text.png";
 function App() {
   const [showEditPanle, setShowEditPanel] = useState(false);
   function reducer(state, action) {
-    if (action.type === "calcDate") {
-      let date = new Date(
-        new Date(action.initialDate).getTime() + 90 * 24 * 60 * 60 * 1000
-      );
-      let finalDate = `${(date.getMonth() + 1)
-        .toString()
-        .padStart(2, "0")}/${date
-        .getDate()
-        .toString()
-        .padStart(2, "0")}/${date.getFullYear()}`;
-      let time = `${
-        new Date(action.initialDate).getHours() > 11
-          ? new Date(action.initialDate).getHours() - 12
-          : new Date(action.initialDate).getHours()
-      }:${
-        new Date(action.initialDate).getMinutes() < 10
-          ? "0" + new Date(action.initialDate).getMinutes()
-          : new Date(action.initialDate).getMinutes()
-      } ${new Date(action.initialDate).getHours() > 11 ? "PM" : "AM"}`;
-      time = time[0] > 1 ? "0" + time : time;
-      return {
-        initialDate: action.initialDate,
-        finalDate: finalDate,
-        time: time,
-      };
+    switch (action.type) {
+      case "calcFinalDate":
+        let date = new Date(
+          new Date(action.payload).getTime() + 90 * 24 * 60 * 60 * 1000
+        );
+        let finalDate = `${(date.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}/${date
+          .getDate()
+          .toString()
+          .padStart(2, "0")}/${date.getFullYear()}`;
+        let time = `${
+          new Date(action.payload).getHours() > 11
+            ? new Date(action.payload).getHours() - 12
+            : new Date(action.payload).getHours()
+        }:${
+          new Date(action.payload).getMinutes() < 10
+            ? "0" + new Date(action.payload).getMinutes()
+            : new Date(action.payload).getMinutes()
+        } ${new Date(action.payload).getHours() > 11 ? "PM" : "AM"}`;
+        time = time[0] > 1 ? "0" + time : time;
+        return {
+          ...state,
+          initialDate: action.initialDate,
+          finalDate: finalDate,
+          time: time,
+        };
+      case "calcTimeRemaining":
+        const dateInitial = new Date(action.initialDate);
+        const ninetyDaysLater = new Date(
+          dateInitial.getTime() + 90 * 24 * 60 * 60 * 1000
+        );
+        const currentDate = new Date();
+        const differenceMs = ninetyDaysLater - currentDate;
+        let daysRemaining = differenceMs / (1000 * 60 * 60 * 24);
+        let hoursRemaining =
+          (differenceMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
+        let minutesRemaining = (differenceMs % (1000 * 60 * 60)) / (1000 * 60);
+        let secondsRemaining = (differenceMs % (1000 * 60)) / 1000;
+
+        return {
+          ...state,
+          daysRemaining: daysRemaining,
+          hoursRemaining: hoursRemaining,
+          minutesRemaining: minutesRemaining,
+          secondsRemaining: secondsRemaining,
+        };
+      case "calcTimePassed":
+      default:
+        throw new Error("Unkown action.type");
     }
   }
 
@@ -43,18 +68,33 @@ function App() {
       "0"
     )}/${new Date().getFullYear()} ${new Date().getHours()}:${new Date().getMinutes()}`;
 
-  const [{ initialDate, finalDate, time }, dispatch] = useReducer(
+  const [
+    {
+      daysRemaining,
+      hoursRemaining,
+      minutesRemaining,
+      secondsRemaining,
+      initialDate,
+      finalDate,
+      time,
+    },
+    dispatch,
+  ] = useReducer(
     reducer,
-    JSON.parse(localStorage.getItem("date-range")) || {
+    JSON.parse(localStorage.getItem("initial-state")) || {
       initialDate: currentDate,
       finalDate: "",
       time: "",
+      daysRemaining: 0,
+      hoursRemaining: 0,
+      minutesRemaining: 0,
+      secondsRemaining: 0,
     }
   );
 
   useEffect(() => {
-    if (!JSON.parse(localStorage.getItem("date-range")))
-      dispatch({ type: "calcDate", initialDate: new Date() });
+    if (!JSON.parse(localStorage.getItem("initial-state")))
+      dispatch({ type: "calcFinalDate", payload: new Date() });
   }, []);
 
   useEffect(
@@ -164,28 +204,30 @@ function Main({ finalDate, initialDate, time }) {
       <div className="days-remaining">
         <div className="days counter">
           <p>
-            {+daysRemaining < 10
-              ? "0" + Math.floor(daysRemaining)
-              : Math.floor(daysRemaining)}
+            {Number(daysRemaining) < 10 && Number(daysRemaining) > 0
+              ? "0" + Math.floor(Number(daysRemaining))
+              : Math.floor(Number(daysRemaining))}
           </p>
           <p>Days</p>
           <div className="proggress-bar">
             <div className="bar">
               <div
                 className="proggress"
-                style={{ width: 100 - (daysRemaining * 100) / 90 + "%" }}
+                style={{
+                  width: 100 - (Number(secondsRemaining) * 100) / 90 + "%",
+                }}
               ></div>
               <div className="perc">
-                {Math.floor(100 - (daysRemaining * 100) / 90)}%
+                {Math.floor(100 - (Number(secondsRemaining) * 100) / 90)}%
               </div>
             </div>
           </div>
         </div>
         <div className="hours counter">
           <p>
-            {+hoursRemaining < 10
-              ? "0" + Math.floor(hoursRemaining)
-              : Math.floor(hoursRemaining)}
+            {Number(hoursRemaining) < 10 && Number(hoursRemaining) > 0
+              ? "0" + Math.floor(Number(hoursRemaining))
+              : Math.floor(Number(hoursRemaining))}
           </p>
           <p>Hours</p>
           <div className="proggress-bar">
@@ -202,9 +244,9 @@ function Main({ finalDate, initialDate, time }) {
         </div>
         <div className="minutes counter">
           <p>
-            {+minutesRemaining < 10
-              ? "0" + Math.floor(minutesRemaining)
-              : Math.floor(minutesRemaining)}
+            {Number(minutesRemaining) < 10 && Number(minutesRemaining) > 0
+              ? "0" + Math.floor(Number(minutesRemaining))
+              : Math.floor(Number(minutesRemaining))}
           </p>
           <p>Minutes</p>
           <div className="proggress-bar">
@@ -221,19 +263,21 @@ function Main({ finalDate, initialDate, time }) {
         </div>
         <div className="seconds counter">
           <p>
-            {+secondsRemaining < 10
-              ? "0" + Math.floor(secondsRemaining)
-              : Math.floor(secondsRemaining)}
+            {Number(secondsRemaining) < 10 && Number(secondsRemaining)
+              ? "0" + Math.floor(Number(secondsRemaining))
+              : Math.floor(Number(secondsRemaining))}
           </p>
           <p>Seconds</p>
           <div className="proggress-bar">
             <div className="bar">
               <div
                 className="proggress"
-                style={{ width: 100 - (secondsRemaining * 100) / 60 + "%" }}
+                style={{
+                  width: 100 - (Number(secondsRemaining) * 100) / 60 + "%",
+                }}
               ></div>
               <div className="perc">
-                {Math.ceil(100 - (secondsRemaining * 100) / 60)}%
+                {Math.ceil(100 - (Number(secondsRemaining) * 100) / 60)}%
               </div>
             </div>
           </div>
